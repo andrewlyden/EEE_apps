@@ -8,6 +8,8 @@ import dash_bootstrap_components as dbc
 
 app = Dash(external_stylesheets=[dbc.themes.BOOTSTRAP])
 
+server = app.server
+
 app.layout = html.Div(
     [
         # html.H4("Budget constraint"),
