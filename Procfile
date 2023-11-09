@@ -1,1 +1,1 @@
-web: gunicorn app:server
+web: gunicorn consumer_theory_1:server
