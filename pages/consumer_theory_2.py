@@ -1,19 +1,18 @@
 # from jupyter_dash import JupyterDash
-from dash import Dash, dcc, html, Input, Output
+import dash
+from dash import Dash, dcc, html, Input, Output, callback
 import plotly.graph_objects as go
 import plotly.express as px
 import numpy as np
 import pandas as pd
 import dash_bootstrap_components as dbc
 
-app = Dash(external_stylesheets=[dbc.themes.BOOTSTRAP])
+dash.register_page(__name__)
 
-server = app.server
-
-app.layout = html.Div(
+layout = html.Div(
     [
         # html.H4("Budget constraint"),
-        dcc.Graph(id="graph"),
+        dcc.Graph(id="graph1"),
         html.P("Select demand curve intercept:"),
         dcc.Slider(
             id="slider-intercept",
@@ -44,8 +43,8 @@ app.layout = html.Div(
     ]
 )
 
-@app.callback(
-    Output("graph", "figure"),
+@callback(
+    Output("graph1", "figure"),
     Input("slider-intercept", "value"),
     Input("slider-slope", "value"),
     Input("slider-price", "value")
@@ -78,6 +77,3 @@ def plot(intercept, slope, price):
     fig.add_shape(type="line", x0=quantity, y0=0, x1=quantity, y1=price, line=dict(color="grey", width=3, dash="dash"))
 
     return fig
-
-if __name__ == '__main__':
-    app.run(debug=True)
