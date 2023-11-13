@@ -17,6 +17,7 @@ layout = html.Div(
         html.Div(id='transmission-scotland-england'),
         html.Div(id='transmission-scotland-wales'),
         html.Div(id='transmission-england-wales'),
+        html.Div(id='unified-price'),
         dcc.Graph(id="graph22"),
         html.P("Select wind capacity in Scotland:"),
         dcc.Slider(
@@ -107,6 +108,7 @@ layout = html.Div(
     Output("transmission-scotland-england", 'children'),
     Output("transmission-scotland-wales", 'children'),
     Output("transmission-england-wales", 'children'),
+    Output("unified-price", 'children'),
     Input("slider-wind-scotland", "value"),
     Input("slider-wind-england", "value"),
     Input("slider-wind-wales", "value"),
@@ -207,7 +209,12 @@ def calc(wind_capacity_scotland, wind_capacity_england, wind_capacity_wales,
     )
 
     network.optimize(solver_name='highs')
-    print(network.lines_t.p0.iloc[0, 1])
+    # print(network.buses_t.marginal_price.values[0])
+
+    # unified pricing network
+    network2 = network.copy()
+    network2.lines.s_nom = 4000000
+    network2.optimize(solver_name='highs')
 
     def network_figure():
 
@@ -221,18 +228,19 @@ def calc(wind_capacity_scotland, wind_capacity_england, wind_capacity_wales,
         df1 = network.buses.reset_index()
         df1['Gas'] = [gas_capacity_scotland, gas_capacity_england, gas_capacity_wales]
         df1['Wind'] = [wind_capacity_scotland, wind_capacity_england, wind_capacity_wales]
-        print(df1)
+        df1['Price'] = network.buses_t.marginal_price.values[0]
+        # print(df1)
 
         # fig = px.scatter_mapbox(df1, lat="y", lon="x", hover_name='Bus', size=gen, hover_data=['Gas', 'Wind'],
         #             color_discrete_sequence=["blue"], zoom=4.5, height=500, width=500)
         # df2 = df1.append(pd.DataFrame(df1.loc[:,0],index=['3'],columns=df1.columns))
-        fig1 = go.Figure(go.Scattermapbox(mode="markers+lines+text",
+        fig1 = go.Figure(go.Scattermapbox(mode="markers+lines",
                                         lon=[df1['x'][0], df1['x'][1], df1['x'][2]],#, df1['x'][0]],
                                         lat=[df1['y'][0], df1['y'][1], df1['y'][2]],#, df1['y'][0]],
                                         line_color='blue',
                                         marker = {'size': 10},
-                                        customdata=df1[['Bus', 'Gas', 'Wind']],
-                                        hovertemplate ="%{customdata[0]}: <br>Gas: %{customdata[1]} </br>Wind: %{customdata[2]}",
+                                        customdata=df1[['Bus', 'Gas', 'Wind', 'Price']],
+                                        hovertemplate ="%{customdata[0]}: <br>Gas: %{customdata[1]} </br>Wind: %{customdata[2]} <br>Price: %{customdata[3]} </br>",
                                         name="",
                                         showlegend=False,
                                         )
@@ -261,9 +269,10 @@ def calc(wind_capacity_scotland, wind_capacity_england, wind_capacity_wales,
         output1 = network.lines_t.p0.columns[0] + ' = ' + network.lines_t.p0.iloc[0, 0].round(0).astype(str)
         output2 = network.lines_t.p0.columns[1] + ' = ' + network.lines_t.p0.iloc[0, 1].round(0).astype(str)
         output3 = network.lines_t.p0.columns[2] + ' = ' + network.lines_t.p0.iloc[0, 2].round(0).astype(str)
+        output4 = 'Unified price = ' + network2.buses_t.marginal_price.values[0][0].astype(str)
 
-        return fig, output1, output2, output3
+        return fig, output1, output2, output3, output4
 
-    fig = network_figure()
+    fig, output1, output2, output3, output4 = network_figure()
 
-    return fig
+    return fig, output1, output2, output3, output4
