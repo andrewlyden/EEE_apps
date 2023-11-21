@@ -68,7 +68,7 @@ def update_npv(initial_investment, annual_cash_inflow, discount_rate, num_years)
         'layout': {
             'title': 'NPV Over Years',
             'xaxis': {'title': 'Year'},
-            'yaxis': {'title': 'Net Present Value ($)', 'hoverformat': ',.2f'}
+            'yaxis': {'title': 'Net Present Value (£)', 'hoverformat': ',.2f'}
         }
     }
     
