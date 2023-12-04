@@ -73,6 +73,6 @@ def update_npv(initial_investment, annual_cash_inflow, discount_rate, num_years)
     }
     
     # Display NPV result
-    npv_output = f"Net Present Value for {num_years} years: ${npv_results[-1]:,.2f}"
+    npv_output = f"Net Present Value for {num_years} years: £{npv_results[-1]:,.2f}"
     
     return fig, npv_output

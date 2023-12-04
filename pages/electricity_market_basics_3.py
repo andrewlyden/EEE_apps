@@ -131,7 +131,7 @@ def calc(period):
         )
         fig.update_shapes(dict(xref='x', yref='y'))
 
-        fig.add_vline(x=network.loads_t.p['Bus load'][period], line_color="green", annotation_text="Load", annotation_position="bottom right")
+        fig.add_vline(x=network.loads_t.p['Bus load'][period], line_color="green", annotation_text="Demand", annotation_position="bottom right")
 
         fig.update_xaxes(range=[0, network.generators.p_nom.sum() + 10], title_text='Quantity')
         fig.update_yaxes(range=[0, y5 + 10], title_text='Price')
