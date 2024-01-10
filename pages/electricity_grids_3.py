@@ -1,4 +1,5 @@
 import pypsa, numpy as np
+from pypsa.descriptors import get_switchable_as_dense as as_dense
 
 # from jupyter_dash import JupyterDash
 import dash
@@ -12,13 +13,10 @@ import dash_bootstrap_components as dbc
 dash.register_page(__name__)
 
 layout = html.Div(
-    [
-        # html.H4("Budget constraint"),
-        html.Div(id='transmission-scotland-england'),
-        html.Div(id='transmission-scotland-wales'),
-        html.Div(id='transmission-england-wales'),
-        html.Div(id='unified-price'),
-        dcc.Graph(id="graph22"),
+    [   
+        html.P("Nodal pricing"),
+        html.Div(id='nodal-costs'),
+        dcc.Graph(id="graph26"),
         html.P("Select wind capacity in Scotland:"),
         dcc.Slider(
             id="slider-wind-scotland",
@@ -104,20 +102,17 @@ layout = html.Div(
 )
 
 @callback(
-    Output("graph27", "figure"),
-    Output("transmission-scotland-england4", 'children'),
-    Output("transmission-scotland-wales4", 'children'),
-    Output("transmission-england-wales4", 'children'),
-    Output("unified-price4", 'children'),
-    Input("slider-wind-scotland4", "value"),
-    Input("slider-wind-england4", "value"),
-    Input("slider-wind-wales4", "value"),
-    Input("slider-gas-scotland4", "value"),
-    Input("slider-gas-england4", "value"),
-    Input("slider-gas-wales4", "value"),
-    Input("slider-transmission-SE4", "value"),
-    Input("slider-transmission-WS4", "value"),
-    Input("slider-transmission-EW4", "value"),
+    Output("graph26", "figure"),
+    Output("nodal-costs", "children"),
+    Input("slider-wind-scotland", "value"),
+    Input("slider-wind-england", "value"),
+    Input("slider-wind-wales", "value"),
+    Input("slider-gas-scotland", "value"),
+    Input("slider-gas-england", "value"),
+    Input("slider-gas-wales", "value"),
+    Input("slider-transmission-SE", "value"),
+    Input("slider-transmission-WS", "value"),
+    Input("slider-transmission-EW", "value"),
 
 )
 
@@ -146,6 +141,7 @@ def calc(wind_capacity_scotland, wind_capacity_england, wind_capacity_wales,
     }
 
     network = pypsa.Network()
+
     # snapshots labelled by [0,1,2,3]
     country = ["Scotland", 'England', 'Wales']
     coordinates = {'Scotland': {'y': 57., 'x': -4.2}, 'England': {'y': 52.1, 'x': 0.17}, 'Wales': {'y': 52.0, 'x': -3.8}}
@@ -209,31 +205,17 @@ def calc(wind_capacity_scotland, wind_capacity_england, wind_capacity_wales,
     )
 
     network.optimize(solver_name='highs')
-    # print(network.buses_t.marginal_price.values[0])
+    nodal_costs = network.statistics().dropna()['Operational Expenditure'].values[0]
+    nodal_costs = 'Nodal costs: £' + str(round(nodal_costs, 2))
 
-    # unified pricing network
-    network2 = network.copy()
-    network2.lines.s_nom = 4000000
-    network2.optimize(solver_name='highs')
 
     def network_figure():
 
-        # plot the network
-        gen = network.generators.assign(g=network.generators_t.p.mean()).groupby(["bus"]).g.sum()
-        # fig = network.iplot(
-        #     size=(500, 500), mapbox=True, mapbox_style='carto-positron', mapbox_parameters={'zoom': 5, 'hover_data': [network.generators.p_nom]}, iplot=False,
-        #     bus_sizes=gen / 1e2,
-        #     # bus_colors={"gas": "indianred", "wind": "midnightblue"},
-        #     line_widths=4,)
         df1 = network.buses.reset_index()
         df1['Gas'] = [gas_capacity_scotland, gas_capacity_england, gas_capacity_wales]
         df1['Wind'] = [wind_capacity_scotland, wind_capacity_england, wind_capacity_wales]
         df1['Price'] = network.buses_t.marginal_price.values[0]
-        # print(df1)
 
-        # fig = px.scatter_mapbox(df1, lat="y", lon="x", hover_name='Bus', size=gen, hover_data=['Gas', 'Wind'],
-        #             color_discrete_sequence=["blue"], zoom=4.5, height=500, width=500)
-        # df2 = df1.append(pd.DataFrame(df1.loc[:,0],index=['3'],columns=df1.columns))
         fig1 = go.Figure(go.Scattermapbox(mode="markers+lines",
                                         lon=[df1['x'][0], df1['x'][1], df1['x'][2]],#, df1['x'][0]],
                                         lat=[df1['y'][0], df1['y'][1], df1['y'][2]],#, df1['y'][0]],
@@ -251,6 +233,7 @@ def calc(wind_capacity_scotland, wind_capacity_england, wind_capacity_wales,
                     'style': "carto-positron",
                     'zoom': 4.5},
             height=500, width=500)
+
         fig2 = go.Figure(go.Scattermapbox(mode="lines",
                                         lon=[df1['x'][2], df1['x'][0]],
                                         lat=[df1['y'][2], df1['y'][0]],
@@ -266,13 +249,13 @@ def calc(wind_capacity_scotland, wind_capacity_england, wind_capacity_wales,
 
         fig = go.Figure(data=fig2.data + fig1.data, layout=fig1.layout)
 
-        output1 = network.lines_t.p0.columns[0] + ' = ' + network.lines_t.p0.iloc[0, 0].round(0).astype(str)
-        output2 = network.lines_t.p0.columns[1] + ' = ' + network.lines_t.p0.iloc[0, 1].round(0).astype(str)
-        output3 = network.lines_t.p0.columns[2] + ' = ' + network.lines_t.p0.iloc[0, 2].round(0).astype(str)
-        output4 = 'Unified price = ' + network2.buses_t.marginal_price.values[0][0].astype(str)
+        # output1 = network.lines_t.p0.columns[0] + ' = ' + network.lines_t.p0.iloc[0, 0].round(0).astype(str)
+        # output2 = network.lines_t.p0.columns[1] + ' = ' + network.lines_t.p0.iloc[0, 1].round(0).astype(str)
+        # output3 = network.lines_t.p0.columns[2] + ' = ' + network.lines_t.p0.iloc[0, 2].round(0).astype(str)
+        # output4 = 'Unified price = ' + network_unified.buses_t.marginal_price.values[0][0].astype(str)
 
-        return fig, output1, output2, output3, output4
+        return fig
 
-    fig, output1, output2, output3, output4 = network_figure()
+    fig1 = network_figure()
 
-    return fig, output1, output2, output3, output4
+    return fig1, nodal_costs
